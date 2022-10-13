@@ -2,11 +2,15 @@ package com.programming.technie.springredditclone.controller;
 
 import com.programming.technie.springredditclone.dto.AuthenticationResponse;
 import com.programming.technie.springredditclone.dto.LoginRequest;
+import com.programming.technie.springredditclone.dto.RefreshTokenRequest;
 import com.programming.technie.springredditclone.dto.RegisterRequest;
 import com.programming.technie.springredditclone.service.AuthService;
+import com.programming.technie.springredditclone.service.RefreshTokenService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import javax.validation.Valid;
 
 import static org.springframework.http.HttpStatus.OK;
 
@@ -16,6 +20,7 @@ import static org.springframework.http.HttpStatus.OK;
 @AllArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final RefreshTokenService refreshTokenService;
 
     @PostMapping("/signup")
     public ResponseEntity signup(@RequestBody RegisterRequest registerRequest){
@@ -34,6 +39,17 @@ public class AuthController {
     public AuthenticationResponse login(@RequestBody LoginRequest loginRequest){
         System.out.print(loginRequest);
         return authService.login(loginRequest);
+    }
+
+    @PostMapping("refresh/token")
+    public AuthenticationResponse refreshTokens(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest){
+        return authService.refreshToken(refreshTokenRequest);
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@Valid @RequestBody RefreshTokenRequest refreshTokenRequest){
+        refreshTokenService.deleteRefreshToken(refreshTokenRequest.getRefreshToken());
+        return ResponseEntity.status(OK).body("Refresh token deleted successfully");
     }
 
 

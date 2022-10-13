@@ -2,6 +2,7 @@ package com.programming.technie.springredditclone.service;
 
 import com.programming.technie.springredditclone.dto.AuthenticationResponse;
 import com.programming.technie.springredditclone.dto.LoginRequest;
+import com.programming.technie.springredditclone.dto.RefreshTokenRequest;
 import com.programming.technie.springredditclone.dto.RegisterRequest;
 import com.programming.technie.springredditclone.exception.SpringRedditException;
 import com.programming.technie.springredditclone.model.User;
@@ -20,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,14 +31,16 @@ import static java.time.Instant.now;
 @Service
 @AllArgsConstructor
 @Slf4j
+@Transactional
 public class AuthService {
-    private UserRepository userRepository;
-    private VerificationTokenRepository verificationTokenRepository;
-    private PasswordEncoder passwordEncoder;
-    private MailContentBuilder mailContentBuilder;
-    private MailService mailService;
+    private final UserRepository userRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final MailContentBuilder mailContentBuilder;
+    private final MailService mailService;
     private final AuthenticationManager authenticationManager;
-    private JWTProvider jwtProvider;
+    private final JWTProvider jwtProvider;
+    private final RefreshTokenService refreshTokenService;
 
     @Transactional
     public void signup(RegisterRequest registerRequest) {
@@ -63,7 +67,7 @@ public class AuthService {
 
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     User getCurrentUser(){
         org.springframework.security.core.userdetails.User principal = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
@@ -74,7 +78,7 @@ public class AuthService {
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String authenticationToken = jwtProvider.generateToken(authentication);
-        return new AuthenticationResponse(authenticationToken,loginRequest.getUsername());
+        return AuthenticationResponse.builder().authenticationToken(authenticationToken).refreshToken(refreshTokenService.generateRefreshToken().getToken()).expireAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationInMillis())).username(loginRequest.getUsername()).build();
 
     }
 
@@ -108,5 +112,14 @@ public class AuthService {
         User user = userRepository.findByUsername(username).orElseThrow(() -> new SpringRedditException("username not found"));
         user.setEnabled(true);
         userRepository.save(user);
+    }
+
+
+    public AuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest){
+        refreshTokenService.validateRefreshToken(refreshTokenRequest.getRefreshToken());
+
+        String token = jwtProvider.generateTokenWithUserName(refreshTokenRequest.getUsername());
+
+        return AuthenticationResponse.builder().authenticationToken(token).expireAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationInMillis())).username(refreshTokenRequest.getUsername()).refreshToken(refreshTokenRequest.getRefreshToken()).build();
     }
 }
