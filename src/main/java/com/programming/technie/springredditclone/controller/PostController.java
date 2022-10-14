@@ -15,7 +15,7 @@ import static org.springframework.http.ResponseEntity.status;
 
 @RestController
 @AllArgsConstructor
-@RequestMapping("/api/posts/")
+@RequestMapping("/api/posts")
 public class PostController {
     private final PostService postService;
 
@@ -37,13 +37,13 @@ public class PostController {
         return  status(OK).body(postService.getPost(id));
     }
 
-    @GetMapping("by-subreddit/{id}")
+    @GetMapping("/by-subreddit/{id}")
     public ResponseEntity<List<PostResponse>> getPostsBySubreddit(Long id){
         return status(OK).body(postService.getPostsBySubreddit(id));
     }
 
 
-    @GetMapping("by-username/{name}")
+    @GetMapping("/by-username/{name}")
     public ResponseEntity<List<PostResponse>> getPostsByUsername(String userName){
         return status(OK).body(postService.getPostsByUsername(userName));
     }

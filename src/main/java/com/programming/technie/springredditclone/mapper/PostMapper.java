@@ -29,14 +29,22 @@ public abstract class PostMapper {
     @Mapping(target = "subreddit", source = "subreddit")
     @Mapping(target ="voteCount", constant = "0")
     @Mapping(target = "description", source = "postRequest.description")
+    @Mapping(target = "user", source = "user")
     public abstract Post map(PostRequest postRequest, Subreddit subreddit, User user);
 
     @Mapping(target="id" , source = "postId")
-    @Mapping(target = "subredditName", source = "subreddit.name")
-    @Mapping(target = "userName", source = "user.username")
+    @Mapping(target = "subredditName", source = "java(getSubredditName(post))")
+    @Mapping(target = "userName", source = "java(getUsername(post))")
     @Mapping(target="duration" , expression = "java(getDuration(post))")
     @Mapping(target = "commentCount",expression = "java(commentCount(post))")
     public abstract PostResponse mapToDto(Post post);
+    String getUsername(Post post){
+        return post.getUser().getUsername();
+    }
+
+    String getSubredditName(Post post){
+        return post.getSubreddit().getName();
+    }
 
     Integer commentCount(Post post){
         return commentRepository.findByPost(post).size();

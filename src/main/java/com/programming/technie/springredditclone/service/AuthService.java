@@ -5,6 +5,7 @@ import com.programming.technie.springredditclone.dto.LoginRequest;
 import com.programming.technie.springredditclone.dto.RefreshTokenRequest;
 import com.programming.technie.springredditclone.dto.RegisterRequest;
 import com.programming.technie.springredditclone.exception.SpringRedditException;
+import com.programming.technie.springredditclone.exception.UserNotFoundException;
 import com.programming.technie.springredditclone.model.User;
 import com.programming.technie.springredditclone.model.VerificationToken;
 import com.programming.technie.springredditclone.repository.UserRepository;
@@ -12,6 +13,7 @@ import com.programming.technie.springredditclone.repository.VerificationTokenRep
 import com.programming.technie.springredditclone.security.JWTProvider;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.security.oauth2.resource.OAuth2ResourceServerProperties;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,6 +22,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -46,7 +49,7 @@ public class AuthService {
     public void signup(RegisterRequest registerRequest) {
         Optional<User> checkUser = userRepository.findByEmail(registerRequest.getEmail());
 
-        if(checkUser.isPresent()){
+        if (checkUser.isPresent()) {
             throw new SpringRedditException("Email already used");
         }
 
@@ -68,16 +71,17 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    User getCurrentUser(){
-        org.springframework.security.core.userdetails.User principal = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-        return userRepository.findByUsername(principal.getUsername()).orElseThrow(() -> new UsernameNotFoundException("Username not found"));
+    User getCurrentUser() {
+        Jwt principal = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        return userRepository.findByUsername(principal.getSubject()).orElseThrow(() -> new UserNotFoundException(principal.getSubject()));
     }
 
     public AuthenticationResponse login(LoginRequest loginRequest) {
+        System.out.println(loginRequest);
         Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(authentication);
         String authenticationToken = jwtProvider.generateToken(authentication);
+        System.out.println(authenticationToken);
         return AuthenticationResponse.builder().authenticationToken(authenticationToken).refreshToken(refreshTokenService.generateRefreshToken().getToken()).expireAt(Instant.now().plusMillis(jwtProvider.getJwtExpirationInMillis())).username(loginRequest.getUsername()).build();
 
     }
@@ -115,7 +119,7 @@ public class AuthService {
     }
 
 
-    public AuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest){
+    public AuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest) {
         refreshTokenService.validateRefreshToken(refreshTokenRequest.getRefreshToken());
 
         String token = jwtProvider.generateTokenWithUserName(refreshTokenRequest.getUsername());
