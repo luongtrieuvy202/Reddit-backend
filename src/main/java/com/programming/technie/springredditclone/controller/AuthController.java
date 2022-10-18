@@ -1,19 +1,25 @@
 package com.programming.technie.springredditclone.controller;
 
+import static org.springframework.http.HttpStatus.OK;
+
+import javax.validation.Valid;
+
 import com.programming.technie.springredditclone.dto.AuthenticationResponse;
 import com.programming.technie.springredditclone.dto.LoginRequest;
 import com.programming.technie.springredditclone.dto.RefreshTokenRequest;
 import com.programming.technie.springredditclone.dto.RegisterRequest;
 import com.programming.technie.springredditclone.service.AuthService;
 import com.programming.technie.springredditclone.service.RefreshTokenService;
-import lombok.AllArgsConstructor;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.validation.Valid;
-
-import static org.springframework.http.HttpStatus.OK;
-
+import lombok.AllArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -21,7 +27,7 @@ import static org.springframework.http.HttpStatus.OK;
 public class AuthController {
     private final AuthService authService;
     private final RefreshTokenService refreshTokenService;
-
+    
     @PostMapping("/signup")
     public ResponseEntity signup(@RequestBody RegisterRequest registerRequest){
         authService.signup(registerRequest);

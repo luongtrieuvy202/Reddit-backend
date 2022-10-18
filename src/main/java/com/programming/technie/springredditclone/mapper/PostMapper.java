@@ -14,6 +14,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.springframework.beans.factory.annotation.Autowired;
 
+
 @Mapper(componentModel = "spring")
 public abstract class PostMapper {
     @Autowired
@@ -33,8 +34,8 @@ public abstract class PostMapper {
     public abstract Post map(PostRequest postRequest, Subreddit subreddit, User user);
 
     @Mapping(target="id" , source = "postId")
-    @Mapping(target = "subredditName", source = "java(getSubredditName(post))")
-    @Mapping(target = "userName", source = "java(getUsername(post))")
+    @Mapping(target = "subredditName",expression = "java(getSubredditName(post))")
+    @Mapping(target = "userName", expression = "java(getUsername(post))")
     @Mapping(target="duration" , expression = "java(getDuration(post))")
     @Mapping(target = "commentCount",expression = "java(commentCount(post))")
     public abstract PostResponse mapToDto(Post post);
